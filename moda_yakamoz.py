@@ -4,6 +4,7 @@ from googletrans import Translator
 import time
 from datetime import datetime
 import os
+import sys
 
 def fetch_exchange_rate():
     try:
@@ -35,60 +36,71 @@ def fetch_url_with_retries(url, retries=5, backoff_factor=60):
             time.sleep(wait_time)
 
 
-def run_script_moda_yakamoz():
-    print("Running Moda Yakamoz XML translation...")
+# def run_script_moda_yakamoz():
+#     print("Running Moda Yakamoz XML translation...")
 
-    url = "https://modayakamoz.com/xml/yalin1"
-    xml_data = fetch_url_with_retries(url)
+#     url = "https://modayakamoz.com/xml/yalin1"
+#     xml_data = fetch_url_with_retries(url)
 
-    root = ET.fromstring(xml_data)
+#     root = ET.fromstring(xml_data)
 
-    translator = Translator()
-    exchange_rate = fetch_exchange_rate()
+#     translator = Translator()
+#     exchange_rate = fetch_exchange_rate()
 
-    translated_root = ET.Element("Products")
+#     translated_root = ET.Element("Products")
 
-    for product in root.findall("Product"):
-        translated_product = ET.SubElement(translated_root, "Product")
+#     for product in root.findall("Product"):
+#         translated_product = ET.SubElement(translated_root, "Product")
 
-        for tag in product:
-            if tag.tag == "ProductAttributes":
-                translated_attributes = ET.SubElement(translated_product, "ProductAttributes")
-                for attr in tag.findall("ProductAttribute"):
-                    translated_attr = ET.SubElement(translated_attributes, "ProductAttribute")
+#         for tag in product:
+#             if tag.tag == "ProductAttributes":
+#                 translated_attributes = ET.SubElement(translated_product, "ProductAttributes")
+#                 for attr in tag.findall("ProductAttribute"):
+#                     translated_attr = ET.SubElement(translated_attributes, "ProductAttribute")
 
-                    variant_name = attr.find("VariantName")
-                    variant_value = attr.find("VariantValue")
+#                     variant_name = attr.find("VariantName")
+#                     variant_value = attr.find("VariantValue")
 
-                    if variant_name is not None:
-                        translated_name = translator.translate(variant_name.text or "", src="tr", dest="en").text
-                        ET.SubElement(translated_attr, "VariantName").text = translated_name
+#                     if variant_name is not None:
+#                         translated_name = translator.translate(variant_name.text or "", src="tr", dest="en").text
+#                         ET.SubElement(translated_attr, "VariantName").text = translated_name
 
-                    if variant_value is not None:
-                        translated_value = translator.translate(variant_value.text or "", src="tr", dest="en").text
-                        ET.SubElement(translated_attr, "VariantValue").text = translated_value
+#                     if variant_value is not None:
+#                         translated_value = translator.translate(variant_value.text or "", src="tr", dest="en").text
+#                         ET.SubElement(translated_attr, "VariantValue").text = translated_value
 
-            elif tag.tag == "SatisFiyati":
-                try:
-                    price_try = float(tag.text.replace(",", "."))
-                    price_usd = round(price_try * exchange_rate, 2)
-                    ET.SubElement(translated_product, "Price").text = str(price_usd)
-                except:
-                    ET.SubElement(translated_product, "Price").text = "0.00"
+#             elif tag.tag == "SatisFiyati":
+#                 try:
+#                     price_try = float(tag.text.replace(",", "."))
+#                     price_usd = round(price_try * exchange_rate, 2)
+#                     ET.SubElement(translated_product, "Price").text = str(price_usd)
+#                 except:
+#                     ET.SubElement(translated_product, "Price").text = "0.00"
 
-            elif tag.tag in ["UrunAdi", "Aciklama", "Kategori"]:
-                translated_text = translator.translate(tag.text or "", src="tr", dest="en").text
-                ET.SubElement(translated_product, tag.tag).text = translated_text
-            else:
-                ET.SubElement(translated_product, tag.tag).text = tag.text
+#             elif tag.tag in ["UrunAdi", "Aciklama", "Kategori"]:
+#                 translated_text = translator.translate(tag.text or "", src="tr", dest="en").text
+#                 ET.SubElement(translated_product, tag.tag).text = translated_text
+#             else:
+#                 ET.SubElement(translated_product, tag.tag).text = tag.text
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = "translated"
-    os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, f"moda_yakamoz_translated_{timestamp}.xml")
-    ET.ElementTree(translated_root).write(output_file, encoding="utf-8", xml_declaration=True)
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     output_dir = "translated"
+#     os.makedirs(output_dir, exist_ok=True)
+#     output_file = os.path.join(output_dir, f"moda_yakamoz_translated_{timestamp}.xml")
+#     ET.ElementTree(translated_root).write(output_file, encoding="utf-8", xml_declaration=True)
 
-    print(f"Saved translated XML to {output_file}")
-
+#     print(f"Saved translated XML to {output_file}")
+def run_script_moda_yakamoz(xml_path=None):
+    if xml_path:
+        print(f"Reading XML from local file: {xml_path}")
+        with open(xml_path, "rb") as f:
+            xml_data = f.read()
+    else:
+        print("Fetching XML from online source...")
+        url = "https://modayakamoz.com/xml/yalin1"
+        xml_data = fetch_url_with_retries(url, retries=5, backoff_factor=60)
+# if __name__ == "__main__":
+#     run_script_moda_yakamoz()
 if __name__ == "__main__":
-    run_script_moda_yakamoz()
+    xml_file = sys.argv[1] if len(sys.argv) > 1 else None
+    run_script_moda_yakamoz(xml_file)
