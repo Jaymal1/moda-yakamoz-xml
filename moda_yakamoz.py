@@ -14,15 +14,15 @@ def fetch_exchange_rate():
         print("Failed to fetch exchange rate:", e)
         return 0.032  # fallback default rate
 
-def fetch_url_with_retries(url, retries=5, backoff=2):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; GitHubActionsBot/1.0; +https://github.com/yourrepo)"
-    }
-    delay = 2
+
+
+
+def fetch_url_with_retries(url, retries=5, backoff_factor=60):
+    headers = {"User-Agent": "Mozilla/5.0"}
     for attempt in range(1, retries + 1):
         try:
             print(f"Fetching XML (Attempt {attempt})...")
-            response = requests.get(url, headers=headers, timeout=30)
+            response = requests.get(url, headers=headers, timeout=900)  # 15 minutes
             response.raise_for_status()
             return response.content
         except requests.exceptions.RequestException as e:
@@ -30,8 +30,10 @@ def fetch_url_with_retries(url, retries=5, backoff=2):
             if attempt == retries:
                 print("All retry attempts failed.")
                 raise
-            time.sleep(delay)
-            delay *= backoff
+            wait_time = backoff_factor * attempt
+            print(f"Waiting {wait_time} seconds before retrying...")
+            time.sleep(wait_time)
+
 
 def run_script_moda_yakamoz():
     print("Running Moda Yakamoz XML translation...")
