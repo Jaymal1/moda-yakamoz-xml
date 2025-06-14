@@ -1,30 +1,40 @@
-name: Run Moda Yakamoz XML Script
+name: Moda Yakamoz XML Translation
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'  # every 4 hours
   workflow_dispatch:
+  schedule:
+    - cron: "0 */4 * * *"  # Every 4 hours
 
 jobs:
-  run-script:
+  translate-xml:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install googletrans==4.0.0-rc1 requests
+        run: pip install -r requirements.txt
 
-      - name: Run Moda Yakamoz script
+      - name: Download Moda Yakamoz XML (with extended timeout)
+        run: |
+          echo "Downloading moda.xml..."
+          curl --connect-timeout 60 --max-time 1200 --retry 5 --retry-delay 60 -o moda.xml https://modayakamoz.com/xml/yalin1
+
+      - name: Run Moda Yakamoz translation script
         run: |
           echo "Running Moda Yakamoz XML translation..."
-          python moda_yakamoz.py
+          python moda_yakamoz.py moda.xml
+
+      - name: Commit translated file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add translated_moda_yakamoz.xml
+          git commit -m "Update translated Moda Yakamoz XML" || echo "No changes to commit"
+          git push
