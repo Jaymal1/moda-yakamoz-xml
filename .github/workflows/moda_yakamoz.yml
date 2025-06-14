@@ -1,0 +1,35 @@
+name: Moda Yakamoz XML Sync
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'  # Runs every 4 hours
+  workflow_dispatch:       # Allows manual runs
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install deep_translator forex-python requests
+
+    - name: Run moda_yakamoz.py
+      run: python moda_yakamoz.py
+
+    - name: Commit translated files
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add translatedsample_moda.xml original_moda.xml processed_ids_moda.json
+        git commit -m "Auto-update Moda Yakamoz translated XML" || echo "No changes to commit"
+        git push
